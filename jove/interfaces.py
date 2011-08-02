@@ -28,12 +28,12 @@ class ApplicationDescriptor(object):
     @abc.abstractmethod
     def configure(self, config):
         """
-        Performs the necessary :app:`Pyramid` setup for the application, such
+        Performs the necessary `Pyramid` setup for the application, such
         as registering views, etc... The `config` parameter is an instance of
-        `pyramid.config.Configurator`. In general a :app:`Jove` application is
-        set up in the same as a :app:`Pyramid` application. See the
-        :app:`Pyramid` documentation for more information.  The actual `WSGI`
-        application is created by :app:`Jove`.  There is no need to call
+        `pyramid.config.Configurator`. In general a `Jove` application is
+        set up in the same as a `Pyramid` application. See the
+        `Pyramid` documentation for more information.  The actual `WSGI`
+        application is created by `Jove`.  There is no need to call
         `config.make_wsgi_app()` in this method.  This method has no return
         value.
         """
@@ -44,15 +44,15 @@ class ApplicationDescriptor(object):
         This method is responsible for bootstrapping a site which uses this
         application.  This method is expected to return a
         `persistent.Persistent` object which is the initial site root for this
-        site.  This is the object that will be returned by the :app:`Pyramid`
-        `root factory` configured by :app:`Jove`.
+        site.  This is the object that will be returned by the `Pyramid`
+        `root factory` configured by `Jove`.
         """
 
     def make_pipeline(self, app):
         """
         This method can be used to optionally add middleware to the WSGI
         pipeline used by the application.  The `app` parameter is the fully
-        configured :app:`Pyramid` WSGI application created by :app:`Jove`.
+        configured `Pyramid` WSGI application created by `Jove`.
         Applications which require middleware in the WSGI stick may compose
         their middleware stack in this method and return the resulting
         pipeline, which will also be a WSGI application.  By default this

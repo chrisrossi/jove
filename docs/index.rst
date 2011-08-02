@@ -3,13 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Jove's documentation!
-================================
+Jove Application Server
+=======================
+
+`Jove` is an application server and site manager for `Pyramid` web
+applications that use `ZODB`.
 
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+
+   application.rst
+   site.rst
+   settings.rst
+   service.rst
 
 Indices and tables
 ==================
