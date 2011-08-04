@@ -1,11 +1,11 @@
 import unittest2
 
 
-class TestApplicationDescriptor(unittest2.TestCase):
+class TestApplication(unittest2.TestCase):
 
     def make_one(self):
-        from jove.interfaces import ApplicationDescriptor
-        class Derived(ApplicationDescriptor):
+        from jove.interfaces import Application
+        class Derived(Application):
             def configure(self, config): #pragma NO COVERAGE
                 pass
             def make_site(self): #pragma NO COVERAGE
@@ -20,3 +20,7 @@ class TestApplicationDescriptor(unittest2.TestCase):
     def test_initial_settings(self):
         app = self.make_one()
         self.assertEqual(app.initial_settings(), {})
+
+    def test_services(self):
+        app = self.make_one()
+        self.assertEqual(app.services(), [])

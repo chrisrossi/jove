@@ -10,7 +10,8 @@ from repoze.zodbconn.finder import PersistentApplicationFinder
 
 from jove.utils import asbool
 
-ENTRYPOINT_GROUP = 'jove.application'
+APPLICATION_ENTRYPOINT = 'jove.application'
+LOCAL_SERVICE_ENTRYPOINT = 'jove.local_service'
 
 
 class Sites(object):
@@ -68,7 +69,7 @@ class LazySite(object):
 
         ep_dist, ep_name = settings['application'].split('#')
         self.application = pkg_resources.load_entry_point(
-            ep_dist, ENTRYPOINT_GROUP, ep_name)(settings)
+            ep_dist, APPLICATION_ENTRYPOINT, ep_name)(settings)
 
         self.zodb_uri = settings['zodb_uri']
         self.zodb_path = settings.get('zodb_path', '/')
@@ -78,12 +79,20 @@ class LazySite(object):
         # Spin up site.
         application = self.application
 
+        # Initialize services
+        self.services = services = []
+        for spec, descriptor in application.services():
+            ep_dist, ep_name = spec.split('#')
+            service = pkg_resources.load_entry_point(
+                ep_dist, LOCAL_SERVICE_ENTRYPOINT, ep_name)(descriptor)
+            services.append(service)
+
         # Set up the root factory.
         path = filter(None, self.zodb_path.split('/'))
         def appmaker(root):
             needs_commit = False
 
-            # Find application home, creating folderss along the way
+            # Find application home, creating folders along the way
             home = root
             for name in path:
                 folder = home.get(name)
@@ -94,8 +103,7 @@ class LazySite(object):
 
             # Create the site root if not already created
             if 'content' not in home:
-                home['content'] = site = application.make_site()
-                site.__home__ = home
+                self.bootstrap(home)
                 needs_commit = True
 
             if needs_commit:
@@ -110,27 +118,21 @@ class LazySite(object):
         # Get persistent settings
         environ = {}
         home = finder(environ)
-        persistent_settings = home.get('settings')
-        if persistent_settings is None:
-            persistent_settings = application.initial_settings()
-            schema = application.settings_schema()
-            # Serialize/Deserialize forces validation and population of
-            # schema defaults, if not included in initial settings.
-            persistent_settings = schema.deserialize(
-                schema.serialize(persistent_settings))
-            home['settings'] = persistent_settings
-            transaction.commit()
         settings = self.settings.copy()
-        settings.update(persistent_settings)
+        settings.update(home['settings'])
 
         # Make sure db connection gets closed
-        del home, persistent_settings, environ
+        del home, environ
 
         # Configure Pyramid application
         config = Configurator(root_factory=get_root, settings=settings)
         config.begin()
+        for service in services:
+            service.preconfigure(config)
         config.include('pyramid_tm')
         application.configure(config)
+        for service in services:
+            service.configure(config)
         config.end()
 
         self._site = site = config.make_wsgi_app()
@@ -163,3 +165,21 @@ class LazySite(object):
             site.close()
             self._site = None
 
+    def bootstrap(self, home):
+        # Initialize content
+        application = self.application
+        home['content'] = site = application.make_site()
+        site.__home__ = home
+
+        # Initialize settings
+        # Serialize/Deserialize forces validation and population of
+        # schema defaults, if not included in initial settings.
+        persistent_settings = application.initial_settings()
+        schema = application.settings_schema()
+        persistent_settings = schema.deserialize(
+            schema.serialize(persistent_settings))
+        home['settings'] = persistent_settings
+
+        # Initialize services
+        for service in self.services:
+            service.bootstrap(home, site)

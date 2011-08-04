@@ -11,9 +11,9 @@ here.
 """
 
 
-class ApplicationDescriptor(object):
+class Application(object):
     """
-    Concrete subclasses of `ApplicationDescriptor` define applications that can
+    Concrete subclasses of `Application` define applications that can
     be run inside of Jove.
     """
     __metaclass__ = abc.ABCMeta
@@ -76,3 +76,55 @@ class ApplicationDescriptor(object):
         according to the schema returned by the `settings_schema` method.
         """
         return {}
+
+    def services(self):
+        """
+        Indicates the services required by this application. Returns an
+        iterable sequence of tuples of the form ('package#entry_point',
+        descriptor) where the entry point refers to setuptools entry point of
+        type 'jove.local_service'. The descriptor is an arbitrary Python
+        object used to further configure the service. Each service will
+        publish its own expectations regarding the properties of the
+        descriptor.
+        """
+        return []
+
+class LocalService(object):
+    """
+    A service is some extra functionality that is used by an application and
+    can managed by Jove.  A local service is a service that applies to a
+    particular site, as opposed to a global service which applies to an entire
+    Jove instance.
+    """
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self, descriptor):
+        """
+        Constructs an instance of a local service, using the passed in
+        descriptor.  The descriptor is an arbitrary Python object which
+        provides an interface specific to the service being provided.  The
+        service's documentation should describe the expected interface of the
+        descriptor.
+        """
+
+    def bootstrap(self, home, site):
+        """
+        Perform any initialization that must be done when boostrapping a site
+        that uses this service.
+        """
+
+    def preconfigure(self, config):
+        """
+        Performs any necessary `Pyramid` configuration that should occur
+        before the site's application is configured, such as adding
+        configuration directives, etc... The `config` parameter is an instance
+        of `pyramid.config.Configurator`.
+        """
+
+    def configure(self, config):
+        """
+        Performs any necessary `Pyramid` configuration that should occur
+        after the site's application is configured, such as adding event
+        handlers, etc... The `config` parameter is an instance of
+        `pyramid.config.Configurator`.
+        """

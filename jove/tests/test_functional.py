@@ -80,10 +80,12 @@ class FunctionalTests(unittest2.TestCase):
             "zodb_uri = %s\n" % self.zodb_uri)
         self.assert_site_works(app, '/acme/')
 
-from jove.interfaces import ApplicationDescriptor
+
+from jove.interfaces import Application
+from jove.interfaces import LocalService
 
 
-class TestApplication(ApplicationDescriptor):
+class TestApplication(Application):
 
     def configure(self, config):
         config.add_view(dummy_view)
@@ -98,6 +100,24 @@ class TestApplication(ApplicationDescriptor):
     def initial_settings(self):
         return {'things': []}
 
+    def services(self):
+        return [('jove#test_local_service', 'Descriptor')]
+
+
+class TestLocalService(LocalService):
+
+    def __init__(self, descriptor):
+        assert descriptor == 'Descriptor'
+
+    def preconfigure(self, config):
+        config.registry.pre_foo = 'Pre Foo'
+
+    def configure(self, config):
+        config.registry.foo = 'Foo'
+
+    def bootstrap(self, home, site):
+        home['LocalService'] = 'Foo'
+
 
 import persistent
 
@@ -111,6 +131,10 @@ class DummySite(persistent.Persistent):
 
 def dummy_view(request):
     from pyramid.response import Response
+    from jove.utils import find_home
+    assert request.registry.pre_foo == 'Pre Foo'
+    assert request.registry.foo == 'Foo'
+    assert find_home(request.context)['LocalService'] == 'Foo'
     return Response(request.context.body, content_type='text/plain')
 
 
