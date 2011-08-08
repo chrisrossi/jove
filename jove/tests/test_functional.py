@@ -80,6 +80,25 @@ class FunctionalTests(unittest2.TestCase):
             "zodb_uri = %s\n" % self.zodb_uri)
         self.assert_site_works(app, '/acme/')
 
+    @mock.patch('jove.site.transaction')
+    def test_it_exception_in_bootstrap(self, tx):
+        import colander
+        import transaction
+        def abort():
+            tx.aborted = True
+            transaction.abort()
+        tx.abort = abort
+        with mock.patch(
+            'jove.tests.test_functional.TestApplication.initial_settings',
+            mock.Mock(return_value={})):
+            with self.assertRaises(colander.Invalid):
+                app = self.make_application(
+                    "[site:acme]\n"
+                    "application = jove#test_app\n"
+                    "zodb_uri = %s\n" % self.zodb_uri)
+                self.assert_site_works(app, '/acme/')
+        self.assertTrue(tx.aborted)
+
 
 from jove.interfaces import Application
 from jove.interfaces import LocalService

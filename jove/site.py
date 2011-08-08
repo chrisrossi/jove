@@ -92,22 +92,27 @@ class LazySite(object):
         def appmaker(root):
             needs_commit = False
 
-            # Find application home, creating folders along the way
-            home = root
-            for name in path:
-                folder = home.get(name)
-                if folder is None:
-                    home[name] = folder = PersistentMapping()
+            try:
+                # Find application home, creating folders along the way
+                home = root
+                for name in path:
+                    folder = home.get(name)
+                    if folder is None:
+                        needs_commit = True
+                        home[name] = folder = PersistentMapping()
+                    home = folder
+
+                # Create the site root if not already created
+                if 'content' not in home:
                     needs_commit = True
-                home = folder
+                    self.bootstrap(home)
 
-            # Create the site root if not already created
-            if 'content' not in home:
-                self.bootstrap(home)
-                needs_commit = True
-
-            if needs_commit:
-                transaction.commit()
+                if needs_commit:
+                    transaction.commit()
+            except:
+                if needs_commit:
+                    transaction.abort()
+                raise
 
             return home
 
