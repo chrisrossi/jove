@@ -171,10 +171,11 @@ class LazySite(object):
             self._site = None
 
     def bootstrap(self, home):
-        # Initialize content
         application = self.application
-        home['content'] = site = application.make_site()
-        site.__home__ = home
+
+        # Pre-initialize services
+        for service in self.services:
+            service.prebootstrap(home, self)
 
         # Initialize settings
         # Serialize/Deserialize forces validation and population of
@@ -185,6 +186,10 @@ class LazySite(object):
             schema.serialize(persistent_settings))
         home['settings'] = persistent_settings
 
+        # Initialize content
+        home['content'] = site = application.make_site(home, self)
+        site.__home__ = home
+
         # Initialize services
         for service in self.services:
-            service.bootstrap(home, site)
+            service.bootstrap(home, self)

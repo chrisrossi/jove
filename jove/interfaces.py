@@ -39,7 +39,7 @@ class Application(object):
         """
 
     @abc.abstractmethod
-    def make_site(self):
+    def make_site(self, home, site):
         """
         This method is responsible for bootstrapping a site which uses this
         application.  This method is expected to return a
@@ -53,7 +53,7 @@ class Application(object):
         This method can be used to optionally add middleware to the WSGI
         pipeline used by the application.  The `app` parameter is the fully
         configured `Pyramid` WSGI application created by `Jove`.
-        Applications which require middleware in the WSGI stick may compose
+        Applications which require middleware in the WSGI stack may compose
         their middleware stack in this method and return the resulting
         pipeline, which will also be a WSGI application.  By default this
         method simply returns `app`.
@@ -107,10 +107,16 @@ class LocalService(object):
         descriptor.
         """
 
+    def prebootstrap(self, home, site):
+        """
+        Perform any initialization that must be done before the site content
+        is bootstrapped, when boostrapping a site that uses this service.
+        """
+
     def bootstrap(self, home, site):
         """
-        Perform any initialization that must be done when boostrapping a site
-        that uses this service.
+        Perform any initialization that must be done after the site content is
+        bootstrapped, when boostrapping a site that uses this service.
         """
 
     def preconfigure(self, config):
