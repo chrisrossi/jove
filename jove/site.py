@@ -6,6 +6,7 @@ import transaction
 from persistent.mapping import PersistentMapping
 from pyramid.config import Configurator
 from repoze.retry import Retry
+from repoze.zodbconn.middleware import EnvironmentDeleterMiddleware as zcloser
 from repoze.zodbconn.finder import PersistentApplicationFinder
 
 from jove.utils import asbool
@@ -158,6 +159,7 @@ class LazySite(object):
 
         settings = self.settings
         pipeline = self.application.make_pipeline(self.site())
+        pipeline = zcloser(pipeline)
         n_tries = int(settings.get('repoze.retry.tries', 3))
         pipeline = Retry(pipeline, n_tries)
         self._pipeline = pipeline
