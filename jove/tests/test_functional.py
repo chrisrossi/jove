@@ -110,7 +110,7 @@ class TestApplication(Application):
         config.add_view(dummy_view)
         config.add_view(dummy_edit_view, 'edit')
 
-    def make_site(self):
+    def make_site(self, home, site):
         return DummySite('Test Application')
 
     def settings_schema(self):
