@@ -168,9 +168,12 @@ class LazySite(object):
         uri = self.settings['zodbconn.uri']
         storage_factory, dbkw = resolve_uri(uri)
         db = DB(storage_factory(), **dbkw)
-        conn = db.open()
-        home = self.find_home(conn.root())
-        return home['settings']
+        try:
+            conn = db.open()
+            home = self.find_home(conn.root())
+            return home['settings']
+        finally:
+            db.close()
 
     def find_home(self, root):
         needs_commit = False
