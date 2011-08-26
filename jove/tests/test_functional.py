@@ -44,14 +44,14 @@ class FunctionalTests(unittest2.TestCase):
         app = self.make_application(
             "[site:acme]\n"
             "application = jove#test_app\n"
-            "zodb_uri = %s\n" % self.zodb_uri)
+            "zodbconn.uri = %s\n" % self.zodb_uri)
         self.assert_site_works(app, '/acme/')
 
     def test_it_ignore_non_site_section(self):
         app = self.make_application(
             "[site:acme]\n"
             "application = jove#test_app\n"
-            "zodb_uri = %s\n"
+            "zodbconn.uri = %s\n"
             "[other]\n"
             "ignore = me\n" % self.zodb_uri)
         self.assert_site_works(app, '/acme/')
@@ -60,7 +60,7 @@ class FunctionalTests(unittest2.TestCase):
         app = self.make_application(
             "[site:acme]\n"
             "application = jove#test_app\n"
-            "zodb_uri = %s\n"
+            "zodbconn.uri = %s\n"
             "root = True\n" % self.zodb_uri)
         self.assert_site_works(app, '/')
 
@@ -68,7 +68,7 @@ class FunctionalTests(unittest2.TestCase):
         app = self.make_application(
             "[site:acme]\n"
             "application = jove#test_app\n"
-            "zodb_uri = %s\n"
+            "zodbconn.uri = %s\n"
             "virtual_host = acme.com:80\n" % self.zodb_uri)
         self.assert_site_works(app, 'http://acme.com/')
 
@@ -77,7 +77,7 @@ class FunctionalTests(unittest2.TestCase):
             "[site:acme]\n"
             "application = jove#test_app\n"
             "zodb_path = foo/bar\n"
-            "zodb_uri = %s\n" % self.zodb_uri)
+            "zodbconn.uri = %s\n" % self.zodb_uri)
         self.assert_site_works(app, '/acme/')
 
     @mock.patch('jove.site.transaction')
@@ -95,7 +95,7 @@ class FunctionalTests(unittest2.TestCase):
                 app = self.make_application(
                     "[site:acme]\n"
                     "application = jove#test_app\n"
-                    "zodb_uri = %s\n" % self.zodb_uri)
+                    "zodbconn.uri = %s\n" % self.zodb_uri)
                 self.assert_site_works(app, '/acme/')
         self.assertTrue(tx.aborted)
 

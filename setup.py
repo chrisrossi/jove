@@ -31,8 +31,8 @@ install_requires=[
     'jslibs',
     'mock',
     'pyramid_tm',
+    'pyramid_zodbconn',
     'repoze.retry',
-    'repoze.zodbconn',
     ]
 
 tests_require = install_requires + ['WebTest']

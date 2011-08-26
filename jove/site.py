@@ -5,9 +5,11 @@ import transaction
 
 from persistent.mapping import PersistentMapping
 from pyramid.config import Configurator
+from pyramid.request import Request
+from pyramid_zodbconn import get_connection
 from repoze.retry import Retry
-from repoze.zodbconn.middleware import EnvironmentDeleterMiddleware as zcloser
-from repoze.zodbconn.finder import PersistentApplicationFinder
+from zodburi import resolve_uri
+from ZODB.DB import DB
 
 from jove.utils import asbool
 
@@ -72,7 +74,6 @@ class LazySite(object):
         self.application = pkg_resources.load_entry_point(
             ep_dist, APPLICATION_ENTRYPOINT, ep_name)(settings)
 
-        self.zodb_uri = settings['zodb_uri']
         self.zodb_path = settings.get('zodb_path', '/')
 
 
@@ -89,52 +90,20 @@ class LazySite(object):
             services.append(service)
 
         # Set up the root factory.
-        path = filter(None, self.zodb_path.split('/'))
-        def appmaker(root):
-            needs_commit = False
-
-            try:
-                # Find application home, creating folders along the way
-                home = root
-                for name in path:
-                    folder = home.get(name)
-                    if folder is None:
-                        needs_commit = True
-                        home[name] = folder = PersistentMapping()
-                    home = folder
-
-                # Create the site root if not already created
-                if 'content' not in home:
-                    needs_commit = True
-                    self.bootstrap(home)
-
-                if needs_commit:
-                    transaction.commit()
-            except:
-                if needs_commit:
-                    transaction.abort()
-                raise
-
-            return home
-
-        finder = PersistentApplicationFinder(self.zodb_uri, appmaker)
         def get_root(request):
-            return finder(request.environ)['content']
+            root = get_connection(request).root()
+            return self.find_home(root)['content']
 
-        # Get persistent settings
-        environ = {}
-        home = finder(environ)
+        # Colate persistent and config file based settings
         settings = self.settings.copy()
-        settings.update(home['settings'])
-
-        # Make sure db connection gets closed
-        del home, environ
+        settings.update(self.get_persistent_settings())
 
         # Configure Pyramid application
         config = Configurator(root_factory=get_root, settings=settings)
         config.begin()
         for service in services:
             service.preconfigure(config)
+        config.include('pyramid_zodbconn')
         config.include('pyramid_tm')
         application.configure(config)
         for service in services:
@@ -144,10 +113,10 @@ class LazySite(object):
         self._site = site = config.make_wsgi_app()
 
         def closer():
-            db = finder.db
+            db = getattr(config.registry, 'zodb_database', None)
             if db is not None:
                 db.close()
-                finder.db = None
+                del config.registry.zodb_database
 
         site.close = closer
         return site
@@ -159,7 +128,6 @@ class LazySite(object):
 
         settings = self.settings
         pipeline = self.application.make_pipeline(self.site())
-        pipeline = zcloser(pipeline)
         n_tries = int(settings.get('repoze.retry.tries', 3))
         pipeline = Retry(pipeline, n_tries)
         self._pipeline = pipeline
@@ -195,3 +163,38 @@ class LazySite(object):
         # Initialize services
         for service in self.services:
             service.bootstrap(home, self)
+
+    def get_persistent_settings(self):
+        uri = self.settings['zodbconn.uri']
+        storage_factory, dbkw = resolve_uri(uri)
+        db = DB(storage_factory(), **dbkw)
+        conn = db.open()
+        home = self.find_home(conn.root())
+        return home['settings']
+
+    def find_home(self, root):
+        needs_commit = False
+        path = filter(None, self.zodb_path.split('/'))
+        try:
+            # Find application home, creating folders along the way
+            home = root
+            for name in path:
+                folder = home.get(name)
+                if folder is None:
+                    needs_commit = True
+                    home[name] = folder = PersistentMapping()
+                home = folder
+
+            # Create the site root if not already created
+            if 'content' not in home:
+                needs_commit = True
+                self.bootstrap(home)
+
+            if needs_commit:
+                transaction.commit()
+        except:
+            if needs_commit:
+                transaction.abort()
+            raise
+
+        return home

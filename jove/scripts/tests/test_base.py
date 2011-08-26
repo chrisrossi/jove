@@ -39,5 +39,5 @@ sites_config = %(here)s/sites.ini
 sites_ini = """\
 [site:test]
 application = jove#test_app
-zodb_uri = memory://
+zodbconn.uri = memory://
 """
