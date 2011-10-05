@@ -12,21 +12,23 @@ class TestBase(unittest2.TestCase):
         self.etc = etc = os.path.join(tmp, 'etc')
         os.mkdir(etc)
         var = os.path.join(tmp, 'var')
-        with open(os.path.join(etc, 'jove.ini'), 'w') as out:
+        self.ini_path = os.path.join(etc, 'jove.ini')
+        with open(self.ini_path, 'w') as out:
             out.write(jove_ini)
         with open(os.path.join(etc, 'sites.ini'), 'w') as out:
             out.write(sites_ini)
-        os.chdir(tmp)
 
         self.out = cStringIO.StringIO()
 
     def tearDown(self):
+        import os
         import shutil
         shutil.rmtree(self.tmp)
 
     def call_script(self, *args):
+        import os
         from jove.scripts.main import main
-        argv = ('jove',) + args
+        argv = ('jove', '-C', self.ini_path) + args
         return main(argv, self.out)
 
 
