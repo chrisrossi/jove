@@ -5,6 +5,7 @@ import transaction
 
 from persistent.mapping import PersistentMapping
 from pyramid.config import Configurator
+from pyramid.decorator import reify
 from pyramid.request import Request
 from pyramid_zodbconn import get_connection
 from repoze.retry import Retry
@@ -76,19 +77,20 @@ class LazySite(object):
 
         self.zodb_path = settings.get('zodb_path', '/')
 
-
-    def site(self):
-        # Spin up site.
-        application = self.application
-
-        # Initialize services
-        self.services = services = []
-        for spec, descriptor in application.services():
+    @reify
+    def services(self):
+        services = []
+        for spec, descriptor in self.application.services():
             ep_dist, ep_name = spec.split('#')
             service = pkg_resources.load_entry_point(
                 ep_dist, LOCAL_SERVICE_ENTRYPOINT, ep_name)(descriptor)
             services.append(service)
+        return services
 
+    def site(self):
+        """
+        Spin up site.
+        """
         # Set up the root factory.
         def get_root(request):
             root = get_connection(request).root()
@@ -101,12 +103,12 @@ class LazySite(object):
         # Configure Pyramid application
         config = Configurator(root_factory=get_root, settings=settings)
         config.begin()
-        for service in services:
+        for service in self.services:
             service.preconfigure(config)
         config.include('pyramid_zodbconn')
         config.include('pyramid_tm')
-        application.configure(config)
-        for service in services:
+        self.application.configure(config)
+        for service in self.services:
             service.configure(config)
         config.end()
 
