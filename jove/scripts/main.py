@@ -8,15 +8,15 @@ from paste.deploy import loadapp
 
 
 def main(argv=sys.argv, out=sys.stdout):
+    # Configure argument parser
     parser = argparse.ArgumentParser()
-    parser.add_argument('-C', '--config', metavar='FILE', default=None,
-                        help='Path to configuration ini file.')
     parser.add_argument('-A', '--appname', metavar='APPLICATION',
                         default='jove', help='Name of Jove app in ini file.')
     parser.add_argument('--pdb', action='store_true', default=False,
                         help='Drop into the debugger if there is an uncaught '
                         'exception.')
 
+    # Load subcommands from entry points
     subparsers = parser.add_subparsers(
         title='command', help='Available commands.')
     eps = [ep for ep in pkg_resources.iter_entry_points('jove.script')]
@@ -28,11 +28,33 @@ def main(argv=sys.argv, out=sys.stdout):
         ep_names.add(ep.name)
         ep.load()(ep.name, subparsers)
 
-    args = parser.parse_args(argv[1:])
-    if args.config is None:
-        args.config = get_default_config()
+    # Need to get hold of config necessary to load app before running the
+    # argument parser because we want to find configured services and
+    # add their commands to the parser.
+    appname = 'jove'
+    config = None
+    raw_args = list(argv)
+    argv = [raw_args.pop(0)]
+    while raw_args:
+        arg = raw_args.pop(0)
+        if arg in ('-C', '--config'):
+            config = raw_args.pop(0)
+        elif arg in ('-A', '--appname'):
+            appname = raw_args.pop(0)
+        else:
+            argv.append(arg)
+    if not config:
+        config = get_default_config()
 
-    app = loadapp('config:%s' % args.config, args.appname)
+    # Load subcommands from configured services.
+    app = loadapp('config:%s' % config, appname)
+    for site in app.registry.sites.sites.values():
+        for service in site.services:
+            for name, subparser in service.scripts():
+                subparser(name, subparsers)
+
+    args = parser.parse_args(argv[1:])
+    args.config = config
     args.app = app
     args.out = out
     try:
