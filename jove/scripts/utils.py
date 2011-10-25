@@ -1,12 +1,16 @@
 from pyramid.scripting import get_root
 
 
-def get_site_root(args, name):
+def get_site(args, name):
     sites = args.app.registry.sites
     site = sites.get(name)
     if site is None:
         args.parser.error("No such site: %s" % name)
-    return get_root(site.site())
+    return site
+
+
+def get_site_root(args, name):
+    return get_root(get_site(args, name).site())
 
 
 def get_site_home(args, name):
