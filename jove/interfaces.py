@@ -134,3 +134,12 @@ class LocalService(object):
         handlers, etc... The `config` parameter is an instance of
         `pyramid.config.Configurator`.
         """
+
+    def scripts(self):
+        """
+        Returns a sequence of (name, subparser) tuples for adding commands to
+        the `Jove` command line interface. `name` is the name of the command
+        and the `subparser` is the same thing used in [jove.script] entry
+        points.
+        """
+        return ()
