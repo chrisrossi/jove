@@ -36,11 +36,8 @@ class TestDebug(TestBase):
         from pyramid.router import Router
         from jove.tests.test_functional import DummySite
         error.side_effect = Exception('bail out')
-        with self.assertRaises(Exception) as ecm:
-            self.call_script('debug', 'nosuchsite')
-        self.assertEqual(str(ecm.exception), 'bail out')
-        self.assertEqual(error.call_count, 1)
-        self.assertEqual(error.call_args[0][0], 'No such site: nosuchsite')
+        self.call_script('debug', 'nosuchsite')
+        self.assertEqual(self.error, 'No such site: nosuchsite')
 
     def test_script(self):
         import os
@@ -50,7 +47,7 @@ class TestDebug(TestBase):
         with open(script, 'w') as out:
             print >> out, "root.foo = 'bar'"
         with mock.patch('jove.scripts.debug.get_site_root', get_site_root):
-            self.call_script('debug', 'test', '-S', 'script.py')
+            self.call_script('debug', 'test', '-S', script)
         self.assertEqual(root.foo, 'bar')
 
 

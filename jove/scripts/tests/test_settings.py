@@ -20,11 +20,10 @@ class TestSettings(TestBase):
             'things: []\n'
         )
 
-    @mock.patch('argparse.ArgumentParser.error')
-    def test_set_invalid(self, error):
+    def test_set_invalid(self):
         self.call_script('settings', 'set', 'test', 'foo', 'five')
         self.assertEqual(self.out.getvalue(),'')
-        self.assertEqual(error.call_count, 1)
+        self.assertEqual(self.error, '{\'foo\': u\'"five" is not a number\'}')
 
     def test_set_json(self):
         self.call_script('settings', 'set', '-J', 'test', 'things',
@@ -65,13 +64,12 @@ class TestSettings(TestBase):
                 "things: [u'dog', u'cat']\n"
             )
 
-    @mock.patch('argparse.ArgumentParser.error')
-    def test_insert_invalid(self, error):
+    def test_insert_invalid(self):
         self.call_script('settings', 'append', 'test', 'things', 'cat')
         self.out.truncate(0)
         self.call_script('settings', 'insert', 'test', 'things', '0', 'foobar')
         self.assertEqual(self.out.getvalue(), '')
-        self.assertEqual(error.call_count, 1)
+        self.assertEqual(self.error, "{'things.0': u'Invalid value'}")
 
     def test_insert_json(self):
         settings = {'things': [u'cat']}

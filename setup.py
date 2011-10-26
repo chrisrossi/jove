@@ -74,6 +74,7 @@ setup(name='jove',
 
           [jove.local_service]
           test_local_service = jove.tests.test_functional:TestLocalService
+          evolution = jove.services.evolution:EvolutionService
 
           [jove.script]
           debug = jove.scripts.debug:config_parser

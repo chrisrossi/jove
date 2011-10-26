@@ -120,7 +120,9 @@ class TestApplication(Application):
         return {'things': []}
 
     def services(self):
-        return [('jove#test_local_service', 'Descriptor')]
+        return [('jove#test_local_service', 'Descriptor'),
+                ('jove#evolution', 'jove.services.tests.fixtures.one'),
+                ('jove#evolution', 'jove.services.tests.fixtures.two')]
 
 
 class TestLocalService(LocalService):
@@ -138,13 +140,14 @@ class TestLocalService(LocalService):
         home['LocalService'] = 'Foo'
 
 
-import persistent
+from persistent.mapping import PersistentMapping
 
-class DummySite(persistent.Persistent):
+class DummySite(PersistentMapping):
     __name__ = None
     __parent__ = None
 
     def __init__(self, body):
+        PersistentMapping.__init__(self)
         self.body = body
 
 
