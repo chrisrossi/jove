@@ -28,7 +28,6 @@ except IOError:
 install_requires=[
     'argparse',
     'colander',
-    'jslibs',
     'mock',
     'pyramid_tm',
     'pyramid_zodbconn',
