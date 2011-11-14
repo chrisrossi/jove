@@ -102,6 +102,7 @@ class LazySite(object):
 
         # Configure Pyramid application
         config = Configurator(root_factory=get_root, settings=settings)
+        config.root_factory = get_root # so apps can access during config
         config.begin()
         for service in self.services:
             service.preconfigure(config)
