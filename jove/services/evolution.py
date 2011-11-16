@@ -61,7 +61,8 @@ class Evolution(object):
             module = resolve(module_name)
             evolve = getattr(module, 'evolve')
             evolve(home)
-        self.versions[self.pkgname] = target
+            self.versions[self.pkgname] = version
+            transaction.commit()
 
 
 #
