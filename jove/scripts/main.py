@@ -1,31 +1,18 @@
 import argparse
-import pkg_resources
+import logging
 import os
+import pkg_resources
 import pdb
 import sys
 
 from paste.deploy import loadapp
+from jove.scripts.utils import retry
 
-try:
-    from psycopg2.extensions import TransactionRollbackError
-except ImportError: #pragma NO COVERAGE
-    class TransactionRollbackError(Exception):
-        pass
+logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
-try:
-    from ZODB.POSException import ConflictError
-except ImportError: #pragma NO COVERAGE
-    class ConflictError(Exception):
-        pass
-
-try:
-    from ZPublisher.Publish import Retry as RetryException
-except ImportError: #pragma NO COVERAGE
-    class RetryException(Exception):
-        pass
-
-
-retryable = (TransactionRollbackError, ConflictError, RetryException)
+log = logging.getLogger(__name__)
 
 
 def main(argv=sys.argv, out=sys.stdout):
@@ -99,8 +86,8 @@ def get_default_config():
     if os.path.exists(config):
         return os.path.abspath(config)
 
-    bin = os.path.abspath(sys.argv[0])
-    env = os.path.dirname(os.path.dirname(bin))
+    exe = os.path.abspath(sys.argv[0])
+    env = os.path.dirname(os.path.dirname(exe))
     config = os.path.join(env, 'etc', 'jove.ini')
 
     if os.path.exists(config):
@@ -124,16 +111,7 @@ def debug(f):
     return wrapper
 
 
-def retry(n, retryable=retryable):
-    def decorator(f):
-        def wrapper(args):
-            tries = n
-            while True:
-                try:
-                    return f(args)
-                except retryable:
-                    if not tries:
-                        raise
-                    tries -= 1
-        return wrapper
-    return decorator
+
+
+
+
