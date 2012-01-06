@@ -6,6 +6,27 @@ import sys
 
 from paste.deploy import loadapp
 
+try:
+    from psycopg2.extensions import TransactionRollbackError
+except ImportError: #pragma NO COVERAGE
+    class TransactionRollbackError(Exception):
+        pass
+
+try:
+    from ZODB.POSException import ConflictError
+except ImportError: #pragma NO COVERAGE
+    class ConflictError(Exception):
+        pass
+
+try:
+    from ZPublisher.Publish import Retry as RetryException
+except ImportError: #pragma NO COVERAGE
+    class RetryException(Exception):
+        pass
+
+
+retryable = (TransactionRollbackError, ConflictError, RetryException)
+
 
 def main(argv=sys.argv, out=sys.stdout):
     # Configure argument parser
@@ -15,6 +36,8 @@ def main(argv=sys.argv, out=sys.stdout):
     parser.add_argument('--pdb', action='store_true', default=False,
                         help='Drop into the debugger if there is an uncaught '
                         'exception.')
+    parser.add_argument('--retries', type=int, metavar='NUMBER', default=None,
+        help='Number of times to retry if there are database conflict errors.')
 
     # Load subcommands from entry points
     subparsers = parser.add_subparsers(
@@ -59,6 +82,8 @@ def main(argv=sys.argv, out=sys.stdout):
     args.out = out
     try:
         func = args.func
+        if args.retries:
+            func = retry(args.retries)(func)
         if args.pdb:
             func = debug(func)
         func(args)
@@ -93,8 +118,22 @@ def get_default_config():
 def debug(f):
     def wrapper(args):
         try:
-            f(args)
+            return f(args)
         except:
             pdb.post_mortem()
     return wrapper
 
+
+def retry(n, retryable=retryable):
+    def decorator(f):
+        def wrapper(args):
+            tries = n
+            while True:
+                try:
+                    return f(args)
+                except retryable:
+                    if not tries:
+                        raise
+                    tries -= 1
+        return wrapper
+    return decorator

@@ -13,7 +13,8 @@ class TestSettings(TestBase):
         )
 
     def test_set(self):
-        self.call_script('settings', 'set', 'test', 'foo', '5')
+        self.call_script('--retries', '2', 'settings', 'set',
+                         'test', 'foo', '5')
         self.assertEqual(
             self.out.getvalue(),
             'foo: 5\n'

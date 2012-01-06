@@ -114,6 +114,25 @@ class TestMain(unittest2.TestCase):
             main()
 
 
+class TestRetry(unittest2.TestCase):
+
+    def test_retry(self):
+        from jove.scripts.main import ConflictError
+        class Script(object):
+            def __init__(self):
+                self.n_calls = 0
+            def __call__(self, args):
+                self.n_calls += 1
+                raise ConflictError
+
+        from jove.scripts.main import retry
+        script = Script()
+        func = retry(5)(script)
+        with self.assertRaises(ConflictError):
+            func(None)
+        self.assertEqual(script.n_calls, 6)
+
+
 class DummyEntryPoint(object):
 
     def __init__(self, name):
